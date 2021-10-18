@@ -1,8 +1,24 @@
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const User = require("../models/user");
 const Account = require("../models/acc");
+const resetToken=require("../models/resetToken");
+const crypto = require("crypto");
+const nodemailer=require('nodemailer');
+
+let transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  service : 'Gmail',
+  
+  auth: {
+    user: 'rachit.taide.551832@gmail.com',
+    pass: '',
+  }
+  
+});
 
 const register =async (req,res)=>{
     try {
@@ -157,4 +173,65 @@ const validate = async (req,res)=>{
     }
 
 
-module.exports ={register, login, update, del, ethacc, getacc, validate};
+const forgot = async(req,res)=>{
+  const {email} =req.body;
+  var userData = await User.findOne({ email: email });
+    console.log(userData);
+     {
+            var token = crypto.randomBytes(32).toString('hex');
+            await resetToken({ token: token, email: email }).save();
+            var url ="http://localhost:3000/userId/reset-password?token="+token;
+            console.log(url);
+            var mailOptions={
+                to:email,
+                subject:"pass reset",
+                html: `<h3> Click on this link to reset your password : ${url} </h3>`
+            }
+            transporter.sendMail(mailOptions,(error,info)=>{
+                if(error){
+                    return console.log(error)
+                }
+            });
+
+            res.render('forgot.ejs');
+        }
+}
+
+const reset=async (req,res)=>{
+  const token = req.query.token;
+    if (token) {
+        var check = await resetToken.findOne({ token: token });
+        if (check) {
+            
+            res.render('reset.ejs');
+        } else {
+            res.render('reset.ejs');
+        }
+    } else { 
+        res.redirect('/login');
+    }
+}
+
+const resetPassword=async (req,res)=>{
+  const { password, password2, email } = req.body;
+    console.log(password);
+    console.log(password2);
+    if (!password || !password2 || (password2 != password)) {
+        res.render('forgot.ejs');
+    } else {
+        // encrypt the password
+        var salt = await bcrypt.genSalt(12);
+        if (salt) {
+            var hash = await bcrypt.hash(password, salt);
+            console.log(hash);
+            var vas =await User.findOneAndUpdate({id: req.params.userId},{ $set: { password: hash } })
+            console.log(vas)
+            res.redirect('/login');
+        } else {
+            res.render('forgot.ejs');
+        }
+    }
+
+}
+
+module.exports ={register, login, update, del, ethacc, getacc, validate,forgot,reset,resetPassword};

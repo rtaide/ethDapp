@@ -1,6 +1,6 @@
 var express = require("express");
 const {getBalance, sendTransaction} = require("../controllers/sendTransaction");
-const {register, login, update, del,ethacc,getacc,validate} = require("../controllers/register");
+const {register, login, update, del,ethacc,getacc,validate,forgot,reset, resetPassword} = require("../controllers/register");
 const User = require("../models/user");
 var router = express.Router();
 
@@ -28,5 +28,8 @@ router.post("/:id/ethacc",ethacc);
 router.get("/:id/balance",getBalance);
 router.post("/sendtrx",sendTransaction);
 router.post("/validate/:id",validate);
+router.post("/:userId/forgot-password",forgot);
+router.get("/:userId/reset-password",reset);
+router.post("/:userId/reset-password",resetPassword);
 
 module.exports=router;
